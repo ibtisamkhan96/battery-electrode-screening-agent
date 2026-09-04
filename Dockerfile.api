@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Pre-download the MLIP so a live Hugging Face Hub call isn't on the critical path of
+# the container's first real request, this bakes the model into the image layer,
+# confirmed to work against the same model name this agent actually loads at runtime.
+RUN python -c "import matgl; matgl.load_model('M3GNet-PES-MatPES-PBE-2025.2')"
+
+COPY agent/ agent/
+COPY api/ api/
+COPY observability/ observability/
+
+EXPOSE 8000
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

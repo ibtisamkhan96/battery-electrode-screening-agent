@@ -1,0 +1,24 @@
+# Agent / orchestration
+langgraph==1.2.10
+langchain==1.3.14
+langchain-anthropic==1.5.4
+langchain-openai==1.6.0
+langsmith==0.10.14
+
+# Materials science
+mp-api==0.46.4
+pymatgen==2026.5.4
+matgl==4.0.3
+
+# Backend
+fastapi==0.138.0
+uvicorn[standard]==0.49.0
+pydantic==2.13.4
+python-dotenv==1.2.2
+
+# UI
+streamlit==1.58.0
+pandas>=2.0
+
+# HTTP
+requests==2.34.2
