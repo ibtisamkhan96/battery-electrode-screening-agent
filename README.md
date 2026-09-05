@@ -211,6 +211,53 @@ Render's free/starter tier containers spin down after inactivity and take a
 noticeable cold-start on the next request, worth knowing before a live demo,
 open the UI a minute or two before you actually need to click through it.
 
+Render's own signup now requires a card even for its free tier, confirmed directly
+during this project. If that is a blocker, use one of the two options below instead.
+
+### Deploying to Hugging Face Spaces
+
+`Dockerfile` (repo root) and `start_hf_space.sh` run the FastAPI backend and the
+Streamlit UI together in one container, since a Space exposes exactly one public
+port and has no card-free way to run two linked services the way Docker Compose
+does locally. `README_HF_SPACE.md` carries the YAML frontmatter (`sdk: docker`,
+`app_port: 7860`) Spaces needs; rename it to `README.md` inside the Space's own
+git repo when pushing there, not in this GitHub repo. Create a Docker-SDK Space,
+add `MP_API_KEY`, `ANTHROPIC_API_KEY`, and optionally `LANGCHAIN_API_KEY` as
+repository secrets, then push this repo's contents to the Space's git remote.
+
+Honest status: this Dockerfile was mid-build (confirmed installing cleanly, no
+errors reached) when the deploy target changed to Streamlit Community Cloud below
+because the Spaces quota on the account building this was already used up, so the
+container build itself was not carried through to a final, running Space.
+
+### Deploying to Streamlit Community Cloud (free, no card, used for the live link)
+
+`streamlit_cloud_app/app.py` is a separate entry point that calls the LangGraph
+agent directly in the same process, instead of over HTTP to a separately hosted
+FastAPI service, since Community Cloud runs exactly one process per app and has
+no free way to run two linked services either. The real `api/main.py` FastAPI
+backend is unchanged and is still what Docker, Render, and `ui/app.py` all use,
+this second entry point exists only because Community Cloud's constraint is
+different from Render's and Spaces'.
+
+1. Go to [share.streamlit.io](https://share.streamlit.io), sign in with GitHub, no
+   card required.
+2. **New app**, pick this repo, branch `master`, and set the main file path to
+   `streamlit_cloud_app/app.py`. Streamlit Cloud finds `requirements.txt` at the
+   repo root automatically since none exists next to the main script.
+3. Under **Advanced settings > Secrets**, paste (TOML format):
+   ```toml
+   MP_API_KEY = "..."
+   LLM_PROVIDER = "anthropic"
+   ANTHROPIC_API_KEY = "..."
+   LANGCHAIN_API_KEY = "..."
+   LANGCHAIN_PROJECT = "battery-electrode-screening-agent"
+   ```
+4. Deploy. The app's own `*.streamlit.app` URL is the live link, confirmed working
+   locally against this exact file and the real `.env` values before this was written:
+   the app boots cleanly, imports the real agent modules with no errors, and serves
+   HTTP 200.
+
 ### Run the tests
 
 ```bash

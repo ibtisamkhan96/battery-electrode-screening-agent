@@ -14,3 +14,6 @@ mp_cache/
 # OS
 .DS_Store
 Thumbs.db
+
+# Streamlit local secrets (Community Cloud manages its own copy in the dashboard)
+.streamlit/secrets.toml

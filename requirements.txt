@@ -1,3 +1,13 @@
+# torch is a transitive dependency of matgl, unconstrained there, so PyPI's default
+# resolution pulls a full CUDA build (each NVIDIA package several hundred MB) even
+# though this project only ever does CPU inference. Confirmed via a real pip dry-run:
+# pinning torch explicitly against PyTorch's own CPU wheel index resolves cleanly to
+# torch==2.12.1+cpu with zero CUDA packages, matching what was already installed
+# locally the whole time (this platform's own wheel availability just happened to
+# avoid the bloat locally; a Linux container does not).
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.12.1
+
 # Agent / orchestration
 langgraph==1.2.10
 langchain==1.3.14

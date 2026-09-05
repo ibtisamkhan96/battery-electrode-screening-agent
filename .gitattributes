@@ -1,0 +1,5 @@
+# start_hf_space.sh runs inside a Linux container. A CRLF line ending on its shebang
+# line ("#!/bin/bash\r") makes Linux fail with "bad interpreter" at container startup,
+# a real, confirmed risk on Windows (git warned it would convert this file to CRLF on
+# checkout here), forcing LF is what actually prevents that.
+*.sh text eol=lf
