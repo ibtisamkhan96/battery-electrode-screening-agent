@@ -178,14 +178,38 @@ Opens the API on `:8000` and the UI on `:8501`. The API image pre-downloads the
 MLIP at build time so the first real request doesn't wait on a Hugging Face Hub
 call.
 
-> **Honest note on this**: `docker compose up` was not run end to end in the
-> development environment, its Docker Desktop daemon was not running (a
-> pre-existing, unrelated Windows virtualization issue on that machine). Every
-> dependency in `requirements.txt`/`requirements-ui.txt` is pinned to a version
-> independently confirmed installable and working in this project's actual
-> Python environment, and the Dockerfiles use a standard `python:3.11-slim` base
-> these packages ship prebuilt wheels for, but the container build itself is the
-> one piece of this project not directly verified.
+> **Update**: `docker compose up --build` has since been run end to end for real.
+> Both images build (the API image pre-warms the MLIP at build time as described
+> above), both containers start cleanly, `/health` returns `{"status": "ok"}`,
+> the Streamlit UI serves on `:8501`, and a real query was submitted through the
+> containerized API and completed successfully with real Materials Project,
+> Anthropic, and arXiv calls.
+
+### Deploying to Render
+
+`render.yaml` in the repo root defines both services as a Render Blueprint.
+
+1. Push this repo to GitHub (already done if you're reading this on GitHub).
+2. In the Render dashboard: **New > Blueprint**, connect this repo, Render reads
+   `render.yaml` and proposes both services (`battery-electrode-api`, `battery-electrode-ui`).
+3. Before the first deploy, Render will prompt for every env var marked `sync: false`:
+   `MP_API_KEY`, `ANTHROPIC_API_KEY` (or switch `LLM_PROVIDER` to `openai` and set
+   `OPENAI_API_KEY` instead), `LANGCHAIN_API_KEY`, and optionally `API_AUTH_TOKEN`.
+   `API_BASE_URL` on the UI service is also `sync: false`, leave it blank for now.
+4. Deploy. Once `battery-electrode-api` is live, copy its public URL (something like
+   `https://battery-electrode-api-xxxx.onrender.com`).
+5. Open `battery-electrode-ui`'s environment settings, set `API_BASE_URL` to that URL,
+   and trigger a redeploy of the UI service so it picks up the new value.
+6. The UI service's own public URL is the live app link for submission.
+
+Both Dockerfiles listen on `$PORT` (falling back to 8000/8501 locally when `$PORT`
+is unset), since Render assigns the actual listen port itself rather than using
+whatever `EXPOSE` says, confirmed against the same local build described above
+before this was written.
+
+Render's free/starter tier containers spin down after inactivity and take a
+noticeable cold-start on the next request, worth knowing before a live demo,
+open the UI a minute or two before you actually need to click through it.
 
 ### Run the tests
 

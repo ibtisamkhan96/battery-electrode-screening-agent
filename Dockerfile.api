@@ -15,4 +15,7 @@ COPY api/ api/
 COPY observability/ observability/
 
 EXPOSE 8000
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render (and most PaaS hosts) assign the actual listen port via $PORT and route traffic
+# there, ignoring whatever EXPOSE says; docker-compose never sets $PORT, so this still
+# defaults to 8000 for local use. Shell form, not exec form, since $PORT needs expanding.
+CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}

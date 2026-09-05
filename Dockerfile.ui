@@ -8,4 +8,6 @@ RUN pip install --no-cache-dir -r requirements-ui.txt
 COPY ui/ ui/
 
 EXPOSE 8501
-CMD ["streamlit", "run", "ui/app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+# Same $PORT reasoning as Dockerfile.api: Render assigns the real listen port, docker-compose
+# never sets $PORT so this still defaults to 8501 for local use.
+CMD streamlit run ui/app.py --server.address=0.0.0.0 --server.port=${PORT:-8501}
