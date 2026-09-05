@@ -1,10 +1,18 @@
 """materials_project.py needs a live MP_API_KEY to actually hit the API, unavailable
-in this dev environment, so this test mocks MPRester itself rather than skipping the
-tool entirely. The field names and search() parameters this test's fake exercises were
-independently confirmed real by introspecting the installed mp-api client's
-ElectrodeRester/InsertionElectrodeDoc schema before this tool was written, this test
+in this dev environment when this test was first written, so this test mocks MPRester
+itself rather than skipping the tool entirely. The field names and search() parameters
+this test's fake exercises were independently confirmed real by introspecting the
+installed mp-api client's ElectrodeRester/InsertionElectrodeDoc schema, so this test
 checks the wrapper's own logic (missing-value handling, id construction), not whether
-those field names exist."""
+those field names exist.
+
+Worth noting honestly: this mock did NOT catch a real bug. The tool was first written
+calling mpr.materials.electrodes.search(...), which does not exist, the real registered
+attribute is mpr.materials.insertion_electrodes. A MagicMock happily accepts any
+attribute name with no error, so this test passed the whole time regardless. Only a
+real, live call (once a real MP_API_KEY was available) raised the AttributeError that
+caught it. A mock proves the wrapper's logic is right; it cannot prove the path into
+the real client is right, that needs a live call at least once."""
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -26,7 +34,7 @@ def _fake_doc(**overrides):
 def test_search_electrodes_maps_real_fields_correctly(mock_mprester_cls, monkeypatch):
     monkeypatch.setenv("MP_API_KEY", "fake-key-for-test")
     mock_mpr = MagicMock()
-    mock_mpr.materials.electrodes.search.return_value = [_fake_doc()]
+    mock_mpr.materials.insertion_electrodes.search.return_value = [_fake_doc()]
     mock_mprester_cls.return_value.__enter__.return_value = mock_mpr
 
     candidates = search_electrodes(working_ion="Li")
@@ -43,7 +51,7 @@ def test_search_electrodes_maps_real_fields_correctly(mock_mprester_cls, monkeyp
 def test_search_electrodes_handles_missing_material_ids_gracefully(mock_mprester_cls, monkeypatch):
     monkeypatch.setenv("MP_API_KEY", "fake-key-for-test")
     mock_mpr = MagicMock()
-    mock_mpr.materials.electrodes.search.return_value = [_fake_doc(material_ids=None)]
+    mock_mpr.materials.insertion_electrodes.search.return_value = [_fake_doc(material_ids=None)]
     mock_mprester_cls.return_value.__enter__.return_value = mock_mpr
 
     candidates = search_electrodes(working_ion="Li")

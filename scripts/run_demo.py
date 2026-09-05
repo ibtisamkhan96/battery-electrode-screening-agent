@@ -6,6 +6,14 @@ Usage:
 """
 import sys
 
+# Windows' console (and any redirected-to-file output) defaults to a legacy codepage
+# that cannot print most LLM output verbatim, an em dash, a checkmark, a degree sign
+# all crash a plain print() with UnicodeEncodeError. Confirmed live: this exact script
+# crashed on real report_writer output before this fix. Forcing UTF-8 here is the
+# standard, one-line fix, and has to happen before anything else prints.
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
 sys.path.insert(0, ".")
 
 from agent.graph import build_graph

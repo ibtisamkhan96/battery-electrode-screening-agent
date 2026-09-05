@@ -64,7 +64,11 @@ def search_electrodes(
         tells you whether an electrode is physically plausible, not just on paper.
     """
     with MPRester(_get_api_key(api_key)) as mpr:
-        docs = mpr.materials.electrodes.search(
+        # the registered attribute is "insertion_electrodes", not "electrodes", confirmed
+        # by inspecting MaterialsRester._sub_resters directly after a live call raised
+        # AttributeError on the name this was first written with; both names resolve to
+        # the same ElectrodeRester/InsertionElectrodeDoc schema verified earlier
+        docs = mpr.materials.insertion_electrodes.search(
             working_ion=working_ion,
             elements=elements,
             exclude_elements=exclude_elements,
