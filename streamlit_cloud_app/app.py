@@ -9,8 +9,15 @@ linked services the way Docker Compose or Render can.
 
 Secrets come from st.secrets (Community Cloud's own secrets manager, set under app
 Settings > Secrets as TOML) rather than a .env file, and are copied into os.environ at
-startup since agent.llm and the tool modules all read real environment variables, the
-same code path Docker and local runs already use.
+startup since the tool modules (Materials Project, LangSmith) read real environment
+variables, the same code path Docker and local runs already use.
+
+The LLM key is the one exception: it is deliberately NOT read from st.secrets or
+os.environ. Community Cloud runs one shared process for every visitor, so a key baked
+into a process-wide global (env var, or an @st.cache_resource-wrapped graph) would be
+reused across concurrent users, one visitor's key answering another's query. Each
+visitor pastes their own key in the sidebar instead, and it is passed as an explicit
+function argument all the way to the LLM client, never touching a shared variable.
 """
 import os
 import sys
@@ -52,10 +59,39 @@ st.caption(
     "https://github.com/ibtisamkhan96/battery-electrode-screening-agent"
 )
 
+with st.sidebar:
+    st.header("Your API key")
+    st.caption(
+        "This demo runs on your own key, not a shared one, so one visitor's usage "
+        "can't rate-limit or bill another's. Nothing is stored: the key lives only "
+        "in this browser tab's session and is used for this run only."
+    )
+    provider_label = st.radio(
+        "Provider",
+        ["Anthropic (Claude) — recommended", "OpenAI"],
+        help=(
+            "Recommended: Anthropic. This agent's report-writing and critic/retry "
+            "loop are multi-step tool-calling work, and it was built and tested "
+            "against Claude Sonnet. OpenAI's gpt-4o-mini is supported as a cheaper "
+            "alternative but hasn't had the same testing depth here."
+        ),
+    )
+    provider = "anthropic" if provider_label.startswith("Anthropic") else "openai"
+    key_help_url = (
+        "https://console.anthropic.com/settings/keys"
+        if provider == "anthropic"
+        else "https://platform.openai.com/api-keys"
+    )
+    user_api_key = st.text_input(
+        f"{'Anthropic' if provider == 'anthropic' else 'OpenAI'} API key",
+        type="password",
+        placeholder="sk-...",
+    )
+    st.caption(f"[Get a key]({key_help_url})")
 
-@st.cache_resource
-def _get_graph():
-    llm = get_chat_model()
+
+def _build_graph(provider, api_key):
+    llm = get_chat_model(provider=provider, api_key=api_key)
     return build_graph(llm, search_electrodes, propose_substitutions, relax_and_screen, search_literature)
 
 
@@ -93,12 +129,16 @@ with st.form("query_form"):
     )
     submitted = st.form_submit_button("Screen candidates")
 
+if submitted and not user_api_key.strip():
+    st.warning("Add your API key in the sidebar first, this demo doesn't run on a shared one.")
+    st.stop()
+
 if submitted and query.strip():
     log_placeholder = st.empty()
     log_placeholder.info("Running the agent, this can take 30-90 seconds...")
 
     try:
-        graph = _get_graph()
+        graph = _build_graph(provider, user_api_key.strip())
         start = time.time()
         result = graph.invoke({"raw_query": query})
         log_placeholder.success(f"Done in {time.time() - start:.0f}s")

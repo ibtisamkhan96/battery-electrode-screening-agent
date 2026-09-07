@@ -8,12 +8,18 @@ involved at all, real dependency injection, not a convenience shortcut.
 import os
 
 
-def get_chat_model(provider=None, model=None, temperature=0.0):
+def get_chat_model(provider=None, model=None, temperature=0.0, api_key=None):
+    """api_key, when passed explicitly, takes precedence over the environment variable.
+
+    This matters for any caller serving multiple users from one shared process (e.g. the
+    Streamlit Cloud demo): os.environ is process-wide, so writing a per-visitor key into
+    it would race with concurrent requests and could leak one visitor's key into another's
+    call. Passing api_key explicitly keeps each caller's key local to its own call."""
     provider = provider or os.environ.get("LLM_PROVIDER", "anthropic")
 
     if provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY is required when LLM_PROVIDER=anthropic")
         return ChatAnthropic(
@@ -24,7 +30,7 @@ def get_chat_model(provider=None, model=None, temperature=0.0):
 
     if provider == "openai":
         from langchain_openai import ChatOpenAI
-        api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY is required when LLM_PROVIDER=openai")
         return ChatOpenAI(

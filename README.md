@@ -248,11 +248,15 @@ different from Render's and Spaces'.
 3. Under **Advanced settings > Secrets**, paste (TOML format):
    ```toml
    MP_API_KEY = "..."
-   LLM_PROVIDER = "anthropic"
-   ANTHROPIC_API_KEY = "..."
    LANGCHAIN_API_KEY = "..."
    LANGCHAIN_PROJECT = "battery-electrode-screening-agent"
    ```
+   No `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` here: the LLM key is deliberately
+   **bring-your-own**, entered by each visitor in the app's own sidebar, never a
+   secret shared across every user of the deployed app. See the note at the top of
+   `streamlit_cloud_app/app.py` for why (Community Cloud runs one shared process for
+   all visitors, so a key baked into a process-wide secret or a cached resource would
+   leak across concurrent users).
 4. Deploy. The app's own `*.streamlit.app` URL is the live link, confirmed working
    locally against this exact file and the real `.env` values before this was written:
    the app boots cleanly, imports the real agent modules with no errors, and serves
