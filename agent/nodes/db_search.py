@@ -10,7 +10,15 @@ from dataclasses import asdict
 
 logger = logging.getLogger("battery_agent.db_search")
 
-TARGET_CANDIDATES = 5
+TARGET_CANDIDATES = 5  # "sufficient" threshold: stop proposing new candidates once we have this many
+
+# How many real matches to actually request from Materials Project. Deliberately larger
+# than TARGET_CANDIDATES: requesting exactly the threshold means every search that clears
+# it reports back that exact same number, which looks like a coincidence but is really the
+# fetch cap, not the true count. Fetching more than the threshold needs lets "returned N
+# candidates" reflect how many real matches actually exist (up to this limit), while the
+# threshold below still decides whether that's enough to stop.
+FETCH_LIMIT = 15
 
 
 def make_db_search_node(search_fn):
@@ -26,7 +34,7 @@ def make_db_search_node(search_fn):
             exclude_elements=c.get("elements_exclude") or None,
             average_voltage=(c.get("average_voltage_min"), c.get("average_voltage_max")),
             capacity_grav=(c.get("capacity_grav_min"), None),
-            num_candidates=TARGET_CANDIDATES,
+            num_candidates=FETCH_LIMIT,
         )
         candidate_dicts = [asdict(candidate) for candidate in candidates]
         logger.info(f"Materials Project electrode search returned {len(candidate_dicts)} candidates")
