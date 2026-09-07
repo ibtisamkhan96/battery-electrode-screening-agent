@@ -21,6 +21,36 @@ st.caption(
     "whether anyone has actually studied them."
 )
 
+with st.sidebar:
+    st.header("Your API key")
+    st.caption(
+        "This runs on your own key, not a shared one, so one visitor's usage "
+        "can't rate-limit or bill another's. Nothing is stored server-side: the "
+        "key is sent with this request only and used for this run."
+    )
+    provider_label = st.radio(
+        "Provider",
+        ["Anthropic (Claude) — recommended", "OpenAI"],
+        help=(
+            "Recommended: Anthropic. This agent's report-writing and critic/retry "
+            "loop are multi-step tool-calling work, and it was built and tested "
+            "against Claude Sonnet. OpenAI's gpt-4o-mini is supported as a cheaper "
+            "alternative but hasn't had the same testing depth here."
+        ),
+    )
+    provider = "anthropic" if provider_label.startswith("Anthropic") else "openai"
+    key_help_url = (
+        "https://console.anthropic.com/settings/keys"
+        if provider == "anthropic"
+        else "https://platform.openai.com/api-keys"
+    )
+    user_api_key = st.text_input(
+        f"{'Anthropic' if provider == 'anthropic' else 'OpenAI'} API key",
+        type="password",
+        placeholder="sk-...",
+    )
+    st.caption(f"[Get a key]({key_help_url})")
+
 with st.form("query_form"):
     query = st.text_area(
         "Describe the electrode you're looking for",
@@ -77,9 +107,20 @@ def _render_candidates_table(result):
     return pd.DataFrame(rows)
 
 
+if submitted and not user_api_key.strip():
+    st.warning("Add your API key in the sidebar first, this demo doesn't run on a shared one.")
+    st.stop()
+
 if submitted and query.strip():
     with st.spinner("Submitting query..."):
-        response = requests.post(f"{API_BASE_URL}/query", json={"query": query}, timeout=30)
+        response = requests.post(
+            f"{API_BASE_URL}/query",
+            json={"query": query, "provider": provider, "api_key": user_api_key.strip()},
+            timeout=30,
+        )
+        if response.status_code == 400:
+            st.error(f"Couldn't start the run: {response.json().get('detail', response.text)}")
+            st.stop()
         response.raise_for_status()
         job_id = response.json()["job_id"]
 

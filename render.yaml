@@ -7,10 +7,9 @@ services:
     envVars:
       - key: MP_API_KEY
         sync: false
-      - key: LLM_PROVIDER
-        value: anthropic
-      - key: ANTHROPIC_API_KEY
-        sync: false
+      # No LLM_PROVIDER / ANTHROPIC_API_KEY / OPENAI_API_KEY here: the LLM key is
+      # bring-your-own, sent by each caller in the /query request body, never a
+      # server-side secret. See the note at the top of api/main.py.
       - key: LANGCHAIN_API_KEY
         sync: false
       - key: LANGCHAIN_PROJECT

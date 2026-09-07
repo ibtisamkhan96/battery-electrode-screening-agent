@@ -193,8 +193,9 @@ call.
 2. In the Render dashboard: **New > Blueprint**, connect this repo, Render reads
    `render.yaml` and proposes both services (`battery-electrode-api`, `battery-electrode-ui`).
 3. Before the first deploy, Render will prompt for every env var marked `sync: false`:
-   `MP_API_KEY`, `ANTHROPIC_API_KEY` (or switch `LLM_PROVIDER` to `openai` and set
-   `OPENAI_API_KEY` instead), `LANGCHAIN_API_KEY`, and optionally `API_AUTH_TOKEN`.
+   `MP_API_KEY`, `LANGCHAIN_API_KEY`, and optionally `API_AUTH_TOKEN`. No LLM key
+   here: it's bring-your-own, entered by each visitor in the UI's own sidebar and
+   sent with their request, never a secret the deployment itself holds.
    `API_BASE_URL` on the UI service is also `sync: false`, leave it blank for now.
 4. Deploy. Once `battery-electrode-api` is live, copy its public URL (something like
    `https://battery-electrode-api-xxxx.onrender.com`).
@@ -222,8 +223,9 @@ port and has no card-free way to run two linked services the way Docker Compose
 does locally. `README_HF_SPACE.md` carries the YAML frontmatter (`sdk: docker`,
 `app_port: 7860`) Spaces needs; rename it to `README.md` inside the Space's own
 git repo when pushing there, not in this GitHub repo. Create a Docker-SDK Space,
-add `MP_API_KEY`, `ANTHROPIC_API_KEY`, and optionally `LANGCHAIN_API_KEY` as
-repository secrets, then push this repo's contents to the Space's git remote.
+add `MP_API_KEY` and optionally `LANGCHAIN_API_KEY` as repository secrets (no LLM
+key: it's bring-your-own, entered in the UI's sidebar), then push this repo's
+contents to the Space's git remote.
 
 Honest status: this Dockerfile was mid-build (confirmed installing cleanly, no
 errors reached) when the deploy target changed to Streamlit Community Cloud below

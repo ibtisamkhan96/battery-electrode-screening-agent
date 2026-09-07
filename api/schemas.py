@@ -5,6 +5,11 @@ from pydantic import BaseModel
 
 class QueryRequest(BaseModel):
     query: str
+    # Bring-your-own-key: the LLM key is never a server-side secret, each caller
+    # supplies their own so a shared deployment never bills or shares one caller's
+    # credential with another. See the note at the top of api/main.py.
+    provider: str = "anthropic"
+    api_key: str
 
 
 class QueryResponse(BaseModel):

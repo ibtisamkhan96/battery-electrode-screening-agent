@@ -1,10 +1,16 @@
 """FastAPI backend wrapping the LangGraph agent.
 
-Secure handling means: no API key (MP, LLM provider, LangSmith) is ever accepted from
-a request, all of them come from server-side environment variables only, so a client
-of this API can never exfiltrate or override the service's own credentials. An
-optional bearer token (API_AUTH_TOKEN) locks the API itself down when set; left unset
-it stays open, the right default for a local demo, not for a real deployment.
+The LLM key is bring-your-own: each request supplies its own provider and API key
+(QueryRequest.provider / .api_key), used to build that one request's own graph and
+never persisted, logged, or reused for any other request. A single deployment of
+this API can otherwise serve many callers from one shared process, and baking any
+one caller's key into a module-level global (the way a naive cache would) risks
+reusing it for someone else's query, or billing this service's owner for traffic
+that isn't theirs. MP_API_KEY and LangSmith's key remain server-side environment
+variables, since they are shared, low-cost API keys rather than per-token billed
+ones. An optional bearer token (API_AUTH_TOKEN) locks the API itself down when set;
+left unset it stays open, the right default for a local demo, not for a real
+deployment.
 """
 import logging
 import os
@@ -40,16 +46,17 @@ app.add_middleware(
 )
 
 _job_store = JobStore()
-_graph = None  # built lazily, on first request, so importing this module never requires a live MP_API_KEY
 
 
-def _get_graph():
-    global _graph
-    if _graph is None:
-        llm = get_chat_model()
-        _graph = build_graph(llm, search_electrodes, propose_substitutions, relax_and_screen, search_literature)
-        logger.info("agent graph built")
-    return _graph
+def _build_graph(provider, api_key):
+    """Builds a fresh graph for one request. Not cached: caching by (provider, key)
+    would mean holding every visitor's key in server memory for the process
+    lifetime, and caching without the key in it would reuse whichever caller's key
+    built the graph first for every subsequent caller. Graph construction is cheap,
+    in-memory node wiring, no network calls, so building it per request costs
+    nothing that matters next to the 30-90s the agent itself takes to run."""
+    llm = get_chat_model(provider=provider, api_key=api_key)
+    return build_graph(llm, search_electrodes, propose_substitutions, relax_and_screen, search_literature)
 
 
 def _check_auth(authorization: str = Header(default=None)):
@@ -67,7 +74,10 @@ def health():
 
 @app.post("/query", response_model=QueryResponse, dependencies=[Depends(_check_auth)])
 def submit_query(request: QueryRequest):
-    graph = _get_graph()
+    try:
+        graph = _build_graph(request.provider, request.api_key)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     job_id = _job_store.create()
     _job_store.run_async(job_id, graph.invoke, {"raw_query": request.query})
     logger.info(f"submitted job {job_id}: {request.query!r}")
