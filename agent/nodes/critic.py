@@ -19,9 +19,13 @@ _SYSTEM_PROMPT = (
     "You are reviewing candidate battery electrode materials found for a materials "
     "scientist's request. Decide whether this candidate set is good enough to report, "
     "or whether another round of candidate generation is worth trying. A candidate set "
-    "is generally sufficient if it has at least one Materials Project match, or at "
-    "least one MLIP-screened candidate that converged with a plausible (negative, not "
-    "wildly so) energy per atom. Be honest if the results are weak."
+    "is generally sufficient once it has at least three candidates combined, counting "
+    "both Materials Project matches and MLIP-screened proposals that converged with a "
+    "plausible (negative, not wildly so) energy per atom. Apply this bar uniformly: "
+    "even one or two candidates that already look strong (high voltage, good stability, "
+    "literature support) should still trigger another round if the total is below "
+    "three, since a scientist comparing options benefits from more of them, not just "
+    "the first ones found. Be honest if the results are weak even once you have three."
 )
 
 
