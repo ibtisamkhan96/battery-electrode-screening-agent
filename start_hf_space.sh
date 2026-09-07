@@ -20,4 +20,4 @@ else:
     raise SystemExit('FastAPI did not become healthy in time')
 "
 
-exec streamlit run ui/app.py --server.address=0.0.0.0 --server.port=7860
+exec streamlit run ui/app.py --server.address=0.0.0.0 --server.port="${PORT:-7860}"
