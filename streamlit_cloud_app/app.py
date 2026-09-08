@@ -68,7 +68,7 @@ with st.sidebar:
     )
     provider_label = st.radio(
         "Provider",
-        ["Anthropic (Claude) — recommended", "OpenAI"],
+        ["Anthropic (Claude), recommended", "OpenAI"],
         help=(
             "Recommended: Anthropic. This agent's report-writing and critic/retry "
             "loop are multi-step tool-calling work, and it was built and tested "
